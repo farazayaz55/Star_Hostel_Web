@@ -65,7 +65,7 @@ const ProductTable = ({ products, setProducts, userdata, allcollections, setAllc
         const productRef1 = doc(db, 'Archive', "Info");
         const archiveDoc = await transaction.get(productRef1);
         let tempallrooms = [...allrooms];
-        if (selectedProduct.roomcode !== "") {
+        if (selectedProduct.roomcode !== "" && selectedProduct.roomcode!=null ) {
           const collectionidofoldroom = allrooms.find((obj) => obj.roomcode === selectedProduct.roomcode)
           const roomRef = doc(db, 'Rooms', String(collectionidofoldroom.collectioncode));
           const querySnapshot1 = await transaction.get(roomRef);
@@ -118,6 +118,7 @@ const ProductTable = ({ products, setProducts, userdata, allcollections, setAllc
         setDeleteConfirmationVisible(false);
       })
     } catch (e) {
+      console.log(e)
       alert(e.code);
     }
     setLoading(false)

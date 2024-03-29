@@ -227,19 +227,7 @@ const AddProductForm = ({ setEmployees, employees, userdata, allcollections, set
           if(selectedRoom){
              roomRef = doc(db, 'Rooms', String(selectedRoom.collectioncode));
              querySnapshot1 = await transaction.get(roomRef);
-             let tempcollectionrom = querySnapshot1.data();
-             const roomindex = tempcollectionrom.allobjects.findIndex((obj) => obj.code === selectedRoom.code)
-             tempcollectionrom.allobjects[roomindex] = { ...selectedRoom, capacityleft: Number(selectedRoom.capacityleft) - 1 }
-             const allroomindex = allrooms.findIndex((obj) => obj.code === selectedRoom.code);
-             let tempallrooms = [...allrooms];
-             tempallrooms[allroomindex] = { ...selectedRoom, capacityleft: Number(selectedRoom.capacityleft) - 1 }
- 
-            transaction.set(roomRef, {
-               ...tempcollectionrom
-             }); 
-            setAllrooms(tempallrooms)
           }
-
           const formattedDate = values.dealdate.$d.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
           let month = formattedDate.slice(3, formattedDate.length);
           let tempnumtocheckmonth = Number(month[0] + month[1]);
@@ -279,7 +267,19 @@ const AddProductForm = ({ setEmployees, employees, userdata, allcollections, set
                 customers: tempkhattacust
               })
             }
+            if(selectedRoom){
+            let tempcollectionrom = querySnapshot1.data();
+            const roomindex = tempcollectionrom.allobjects.findIndex((obj) => obj.code === selectedRoom.code)
+            tempcollectionrom.allobjects[roomindex] = { ...selectedRoom, capacityleft: Number(selectedRoom.capacityleft) - 1 }
+            const allroomindex = allrooms.findIndex((obj) => obj.code === selectedRoom.code);
+            let tempallrooms = [...allrooms];
+            tempallrooms[allroomindex] = { ...selectedRoom, capacityleft: Number(selectedRoom.capacityleft) - 1 }
 
+            transaction.set(roomRef, {
+              ...tempcollectionrom
+            });
+            setAllrooms(tempallrooms)
+          }
             let temp = [...tempallobjects];
             temp.unshift({
               ...values,
@@ -369,26 +369,26 @@ const AddProductForm = ({ setEmployees, employees, userdata, allcollections, set
                 <Input placeholder="Enter Customer CNIC" />
               </Form.Item>
             </Col>
-           {!IsMessStudent && <Col xs={24} sm={8}>
-                    <Form.Item
-                    label={"Security"}
-                      name={ 'security'}
-                      fieldKey={ 'security'}
-                      rules={[{ required: true, message: 'Please enter a security' },
-                      {
-                        validator(_, value) {
-                          if (/^\d+$/.test(value) && parseInt(value, 10) >= 0) {
-                            return Promise.resolve();
-                          }
-                  
-                          return Promise.reject(new Error('Please enter a non-negative whole number'));
-                        },
-                      },
-                    ]}
-                    >
-                      <Input type="number" placeholder="Security" />
-                    </Form.Item>
-                    </Col>}
+            {!IsMessStudent && <Col xs={24} sm={8}>
+              <Form.Item
+                label={"Security"}
+                name={'security'}
+                fieldKey={'security'}
+                rules={[{ required: true, message: 'Please enter a security' },
+                {
+                  validator(_, value) {
+                    if (/^\d+$/.test(value) && parseInt(value, 10) >= 0) {
+                      return Promise.resolve();
+                    }
+
+                    return Promise.reject(new Error('Please enter a non-negative whole number'));
+                  },
+                },
+                ]}
+              >
+                <Input type="number" placeholder="Security" />
+              </Form.Item>
+            </Col>}
           </Row>
           <Row gutter={16}>
             <Col xs={24} sm={8}>
@@ -466,7 +466,7 @@ const AddProductForm = ({ setEmployees, employees, userdata, allcollections, set
             </Col>
           </Row>
           <Form.Item name="additionalDetails" label="Additional Details"
-            // rules={[{ required: true, message: 'Please add description' }]}
+          // rules={[{ required: true, message: 'Please add description' }]}
           >
             <Input.TextArea
               placeholder="Enter additional details about the customer"

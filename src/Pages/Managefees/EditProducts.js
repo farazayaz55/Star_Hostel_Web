@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Form, Input, Button, Select, Modal, Upload, message,Row,Col ,DatePicker} from 'antd';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../../firebase-config';
@@ -6,12 +6,18 @@ import { setDoc, doc,runTransaction } from 'firebase/firestore';
 import { storage } from '../../firebase-config2';
 import COLORS from '../../colors';
 import { ref, uploadBytesResumable, getDownloadURL,deleteObject } from 'firebase/storage';
-import { CloseCircleFilled, EditFilled, SaveFilled } from '@ant-design/icons';
+import { CloseCircleFilled, EditFilled, PlusCircleFilled, SaveFilled } from '@ant-design/icons';
 
 const { Option } = Select;
 
 const EditProductForm = (props) => {
   const [form] = Form.useForm();
+  const inputRef=useRef(null)
+
+  const [fileUploaded,setFileUploaded]=useState(null)
+  const [imgUrl,setImgUrl]=useState(null)
+
+  const [loading,setLoading]=useState(false)
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [newdate,setNewdate]=useState(null)
@@ -20,6 +26,7 @@ const EditProductForm = (props) => {
   }, [props.initialValues, form]);
   const onFinish = async (values) => {
     try {
+      values.Proof=imgUrl
       await runTransaction(db, async (transaction) => {
       if (newdate) {
         values.date = newdate.format('DD/MM/YYYY');
@@ -82,6 +89,48 @@ if(!(toaddpayment.exists())){
     setErrorModalVisible(false);
   };
 
+  const imageUploaded=(event)=>{
+    const file=event.target.files[0]
+    setFileUploaded(file)
+    if (!file) {
+      console.warn('No file selected for upload.');
+      return;
+    }
+    const filename = `${Date.now()}-${file.name}`
+    const date=new Date()
+    console.log(props.initialValues,props.initialValues.customer)
+    const ImgRef=ref(storage,`Payment Screenshots/${props.initialValues.customer}/${date.getFullYear()}/${date.getMonth()}/${filename}`)
+    setLoading(true)
+    const uploadTask=uploadBytesResumable(ImgRef,file)
+  
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+          const percent = Math.round(
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+          );
+  
+          // update progress
+          console.log('file upload percent',percent)
+      },
+      (err) => {
+        setFileUploaded(null)
+        console.log(err)},
+      () => {
+          // download url
+          getDownloadURL(uploadTask.snapshot.ref).then((url) => {
+            console.log(url)
+              setImgUrl(url)
+              setLoading(false)
+          });
+      }
+  );
+   }
+
+   const openImages=()=>{
+    inputRef.current.click()
+   }
+
  
   return (
     <Form form={form} onFinish={onFinish} layout="vertical">
@@ -99,20 +148,12 @@ if(!(toaddpayment.exists())){
         <Form.Item
             name="discount"
             label="Discount"
-            rules={[{ required: true, message: 'Please enter a Amount' },
-            {
-              validator(_, value) {
-                if (/^\d+$/.test(value) && parseInt(value, 10) >= 0) {
-                  return Promise.resolve();
-                }
-        
-                return Promise.reject(new Error('Please enter a non-negative whole number'));
-              },
-            },]}
           >
             <Input type={"number"} placeholder="Enter Discount Amount" />
           </Form.Item>
         </Col>
+
+
     
         </Row>
         <Row gutter={16}>
@@ -126,12 +167,40 @@ if(!(toaddpayment.exists())){
                       </Col>}
      
       </Row>
+      <Row>
+
+      <Col xs={24} sm={24}>
+          <Form.Item
+          label={"Proof"}
+          name={'Proof'}
+          fieldKey={'Proof'}
+          rules={[{required:false}]}>
+            <input type='file' accept='img/*'  style={{display:'none'}} ref={inputRef} 
+          onChange={imageUploaded}
+            
+            />
+          { fileUploaded && <div>{fileUploaded.name}</div>}
+            <Button
+          icon={<PlusCircleFilled />}
+          style={{
+            background: COLORS.primarygradient,
+            color: 'white',
+            borderRadius: 10,
+          }}
+          onClick={openImages}
+        >
+          Add Image
+        </Button>
+          </Form.Item>
+        </Col>
+        </Row>
 
       <Form.Item>
         <Button 
         icon={<SaveFilled/>}
+        disabled={loading}
          style={{
-          background:COLORS.primarygradient,
+          background:loading?'red':COLORS.primarygradient,
           color:'white',
           borderRadius:10
         }} 
